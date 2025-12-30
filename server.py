@@ -541,7 +541,7 @@ class YouTubeDownloader:
         ydl_opts = self.ydl_opts_base.copy()
         
         # কুকিজ ফাইলটি যদি ফোল্ডারে থাকে তবে সেটি ব্যবহার করবে
-        cookie_file = 'youtube_cookies.txt'
+        cookie_file = 'cookies.txt'
         if os.path.exists(cookie_file):
             ydl_opts['cookiefile'] = cookie_file
             logger.info("Using cookies for authentication.") #
