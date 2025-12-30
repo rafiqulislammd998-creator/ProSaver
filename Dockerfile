@@ -14,6 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # সব ফাইল কপি করা
+COPY youtube_cookies.txt .
 COPY . .
 
 # 'static' ফোল্ডার তৈরি করা এবং index.html সেখানে সরানো (যদি না থাকে)
