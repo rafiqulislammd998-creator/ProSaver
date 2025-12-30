@@ -538,35 +538,25 @@ class YouTubeDownloader:
             return {'success': False, 'error': str(e), 'task_id': task_id}
     
     def _prepare_download_options(self, format_id: str, task_id: str) -> dict:
-        """AV1 ব্লক করে ইউজারের পছন্দের রেজোলিউশন এবং MP4 নিশ্চিত করা"""
         ydl_opts = self.ydl_opts_base.copy()
-        output_dir = str(self.download_manager.download_dir)
-        Path(output_dir).mkdir(exist_ok=True)
         
-        ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s_%(id)s_{format_id}.%(ext)s')
+        # কুকিজ ফাইলটি যদি ফোল্ডারে থাকে তবে সেটি ব্যবহার করবে
+        cookie_file = 'youtube_cookies.txt'
+        if os.path.exists(cookie_file):
+            ydl_opts['cookiefile'] = cookie_file
+            logger.info("Using cookies for authentication.") #
+            
+        # বাকি কনফিগারেশন আগের মতোই থাকবে...
+        output_dir = str(self.download_manager.download_dir) #
+        ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s_%(id)s_{format_id}.%(ext)s') #
         
+        # রেজোলিউশন এবং ফরম্যাট লজিক
         if format_id == 'mp3':
             ydl_opts['format'] = 'bestaudio/best'
-            ydl_opts['postprocessors'] = [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }]
         else:
-            # [vcodec!=av01] যোগ করা হয়েছে যাতে প্লেয়ারে সাপোর্ট করে না এমন ফরম্যাট ডাউনলোড না হয়
-            if format_id == 'best':
-                ydl_opts['format'] = 'bestvideo[vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]/best[vcodec!=av01][ext=mp4]/best'
-            else:
-                ydl_opts['format'] = f"bestvideo[height<={format_id}][vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]/best[height<={format_id}][vcodec!=av01][ext=mp4]/best"
+            ydl_opts['format'] = f"bestvideo[height<={format_id}][vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]/best[height<={format_id}][vcodec!=av01][ext=mp4]/best"
+            ydl_opts['merge_output_format'] = 'mp4'
             
-            ydl_opts.update({
-                'merge_output_format': 'mp4',
-                'postprocessors': [{
-                    'key': 'FFmpegVideoConvertor',
-                    'preferedformat': 'mp4',
-                }],
-            })
-        
         return ydl_opts
     
     def _truncate_description(self, description: str, max_length: int = 500) -> str:
