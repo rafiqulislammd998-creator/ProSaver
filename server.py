@@ -538,25 +538,30 @@ class YouTubeDownloader:
             return {'success': False, 'error': str(e), 'task_id': task_id}
     
     def _prepare_download_options(self, format_id: str, task_id: str) -> dict:
-        """ইউজার বাছাই করা রেজোলিউশন এবং MP4 ফরম্যাট নিশ্চিত করা"""
+        """ইউজার বাছাই করা রেজোলিউশন এবং MP4 ফরম্যাট নিশ্চিত করা + cookies universal"""
+        
         ydl_opts = self.ydl_opts_base.copy()
         
-        # --- উন্নত কুকিজ পাথ (Render এর জন্য নিরাপদ) ---
-        # এটি নিশ্চিত করবে যে server.py যেখানে আছে, তার পাশের cookies.txt ফাইলটিই নেওয়া হচ্ছে
+        # ------------------ Cookies System ------------------
         base_path = Path(__file__).parent.absolute()
         cookie_path = base_path / 'cookies.txt'
         
         if cookie_path.exists():
             ydl_opts['cookiefile'] = str(cookie_path)
-            logger.info(f"✅ Cookies found and loaded from: {cookie_path}")
+            logger.info("Cookies loaded from cookies.txt")
         else:
-            logger.warning(f"❌ cookies.txt NOT found at {cookie_path}!")
-
+            ydl_opts['cookiesfrombrowser'] = [
+                ('chrome',), ('edge',), ('brave',),
+                ('firefox',), ('opera',), ('vivaldi',)
+            ]
+            logger.info("cookies.txt missing -> Auto loading from browsers")
+        
+        # ------------------ Output Folder ------------------
         output_dir = str(self.download_manager.download_dir)
         Path(output_dir).mkdir(exist_ok=True)
-        
         ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s_%(id)s_{format_id}.%(ext)s')
         
+        # ------------------ Format Handling ------------------
         if format_id == 'mp3':
             ydl_opts['format'] = 'bestaudio/best'
             ydl_opts['postprocessors'] = [{
@@ -565,11 +570,16 @@ class YouTubeDownloader:
                 'preferredquality': '192',
             }]
         else:
-            # রেজোলিউশন লজিক এবং AV1 ব্লক করা
             if format_id == 'best':
-                ydl_opts['format'] = 'bestvideo[vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]/best[vcodec!=av01][ext=mp4]/best'
+                ydl_opts['format'] = (
+                    'bestvideo[vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]'
+                    '/best[vcodec!=av01][ext=mp4]/best'
+                )
             else:
-                ydl_opts['format'] = f"bestvideo[height<={format_id}][vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]/best[height<={format_id}][vcodec!=av01][ext=mp4]/best"
+                ydl_opts['format'] = (
+                    f"bestvideo[height<={format_id}][vcodec!=av01][ext=mp4]+"
+                    "bestaudio[ext=m4a]/best"
+                )
             
             ydl_opts.update({
                 'merge_output_format': 'mp4',
@@ -611,7 +621,7 @@ class YouTubeDownloader:
         return f"{size_bytes:.2f} {units[i]}"
     
     def _save_history(self):
-       pass
+        pass
 
 # Initialize components
 downloader = YouTubeDownloader()
