@@ -541,15 +541,16 @@ class YouTubeDownloader:
         """ইউজার বাছাই করা রেজোলিউশন এবং MP4 ফরম্যাট নিশ্চিত করা"""
         ydl_opts = self.ydl_opts_base.copy()
         
-        # --- আপডেট করা কুকিজ লজিক (Pathlib ব্যবহার করে) ---
-        cookie_path = Path.cwd() / 'cookies.txt'
+        # --- উন্নত কুকিজ পাথ (Render এর জন্য নিরাপদ) ---
+        # এটি নিশ্চিত করবে যে server.py যেখানে আছে, তার পাশের cookies.txt ফাইলটিই নেওয়া হচ্ছে
+        base_path = Path(__file__).parent.absolute()
+        cookie_path = base_path / 'cookies.txt'
         
         if cookie_path.exists():
             ydl_opts['cookiefile'] = str(cookie_path)
-            logger.info(f"Using cookies from: {cookie_path} for task {task_id}")
+            logger.info(f"✅ Cookies found and loaded from: {cookie_path}")
         else:
-            logger.warning(f"cookies.txt not found at {cookie_path}! YouTube might block this.")
-        # -----------------------------------------------
+            logger.warning(f"❌ cookies.txt NOT found at {cookie_path}!")
 
         output_dir = str(self.download_manager.download_dir)
         Path(output_dir).mkdir(exist_ok=True)
