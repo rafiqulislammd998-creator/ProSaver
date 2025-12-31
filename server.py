@@ -538,29 +538,29 @@ class YouTubeDownloader:
             return {'success': False, 'error': str(e), 'task_id': task_id}
     
     def _prepare_download_options(self, format_id: str, task_id: str) -> dict:
-        """কুকিজ সহ ডাউনলোড অপশন সেট করা"""
         ydl_opts = self.ydl_opts_base.copy()
         
-        # কুকিজ ফাইল চেক করা
-        cookie_file = 'youtube_cookies.txt'
-        if os.path.exists(cookie_file):
-            ydl_opts['cookiefile'] = cookie_file
-            logger.info("ইউটিউব অথেন্টিকেশনের জন্য কুকিজ ব্যবহার করা হচ্ছে।")
-            
+        # কুকিজ ফাইলের লোকেশন নিশ্চিত করা
+        # নিশ্চিত করুন যে 'cookies.txt' ফাইলটি server.py এর সাথেই আছে
+        cookie_path = os.path.join(os.getcwd(), 'cookies.txt')
+        
+        if os.path.exists(cookie_path):
+            ydl_opts['cookiefile'] = cookie_path
+            logger.info(f"Using cookies from: {cookie_path}")
+        else:
+            logger.warning("Cookies.txt not found! YouTube might block this request.")
+
         output_dir = str(self.download_manager.download_dir)
         ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s_%(id)s_{format_id}.%(ext)s')
         
+        # বাকি রেজোলিউশন লজিক...
         if format_id == 'mp3':
             ydl_opts['format'] = 'bestaudio/best'
             ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '192'}]
         else:
-            # AV1 ব্লক করে MP4 এবং নির্দিষ্ট রেজোলিউশন নিশ্চিত করা
             ydl_opts['format'] = f"bestvideo[height<={format_id}][vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]/best[height<={format_id}][vcodec!=av01][ext=mp4]/best"
-            ydl_opts.update({
-                'merge_output_format': 'mp4',
-                'postprocessors': [{'key': 'FFmpegVideoConvertor','preferedformat': 'mp4'}],
-            })
-        
+            ydl_opts['merge_output_format'] = 'mp4'
+            
         return ydl_opts
     
     def _truncate_description(self, description: str, max_length: int = 500) -> str:
