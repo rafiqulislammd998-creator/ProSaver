@@ -1,5 +1,5 @@
 # ১. পাইথন লাইটওয়েট ইমেজ ব্যবহার
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # ২. সিস্টেম এনভায়রনমেন্ট সেটআপ
 ENV PYTHONUNBUFFERED=1 \
