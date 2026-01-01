@@ -538,44 +538,34 @@ class YouTubeDownloader:
             return {'success': False, 'error': str(e), 'task_id': task_id}
     
     def _prepare_download_options(self, format_id: str, task_id: str) -> dict:
-        """ইউজার বাছাই করা রেজোলিউশন এবং MP4 ফরম্যাট নিশ্চিত করা + Cookies + PO Token"""
+        """ইউজার বাছাই করা রেজোলিউশন এবং ইউনিক ফাইলনেম নিশ্চিত করা"""
         
         ydl_opts = self.ydl_opts_base.copy()
         
         # ------------------ PO Token & Visitor Data ------------------
-        # আপনার আজ সংগ্রহ করা টোকেনগুলো এখানে বসানো হয়েছে
-        po_token = "MtIEzO7xfjR_x5bM0Fh9V8DcQL8e_IcPyfm4MGuXnBZFo_SYqjhK3RCgCID5UtLmgzh03BRWFqgV33_5dEdzSTWdL8s69pgySmIAwjfiVIFtElCqyoQ-cmcy_YsXxtk6EP27bRsoUKoFwMakwNGf3y37PGeiNgQBUYBpbpam8dJxcQMm-t07qBQ6VMMoWSo5EnCmn1pZhjVSvW-tpRb8uYjwBt4R84oHMAI9SYFFCpjIXUR_Rt4oW52d1NflVdddM4W3QpZVxD3yKOdpMyyEmP3vUZpN4ccbBcoKTbNYp0OcPoNvR8L2F3o322OLdC6bY5eq8ujd4pvY2Uqbujrnh5jXsWx_QxEDjYeEMDXxukDLQlJmzwjBF01hm59Dd4QSDiC_Fv3A43uJEkaRZe71xHR4U2-Wpb9ackFAfa35oDDHa4Ioeim9rcu1sWmEXwDxwhzhykVryGCuN_6LQa8jKdUEmUvQx_ff82zQ5XGnsm_U5GBSEvWhdciHdA8GwQYp54YOcajRm_hMCHmoklYy5gSNLJnsy3vrQ2Lk9H6zgPtNUJvglFgfwYnsb1cml4Rmm-9PYKbLnOC-RNlyckO6HkOPfzQV6mIJLdT0pxrPO-9wFHl5LrLBGh7HkZ2bd6DuHhTp6claaKopUmrPjGD8EMmp52bDQSP9_NbnddneKCbL78DtFqXukfSKUY0Q4-m1JkfxBAPKnVtnkQC9XAS_i6c23m8rrl8_IvpkDQyCu5QK9vi9mef8wqT2BcWtOlPZ0fwnwBrVC5Sg__1wJDUakDmxDKGt"
-        visitor_data = "CgtHSjRHOF9qcmJhUSj3kNPKBjIKCgJCRBIEGgAgB2LfAgrcAjE0LllUPVZwSzRyRkk3VWNidEdoYjVxZ1hFMVM5ekdFZ2NjenM0bkwzWVJCc0xuUVZKaUxaV1o0bVhtWTNGcW4yajdDMkNkZkcyX01MMlQ0b2xSYnRwTHRFYmdlRjU5NURhV2hMZFhLU0RWQkhSVUh3OHktaFByX3NGaHpQT2x2TENVUTF4RVE5dlRxZTRXbnM0ang1QzZiRDc5SXpmeUNtcWZjdHU5el9fejdOMkR6YlhlN1JqaVhabU5CdDZrSUJSTEJRTlROMncxclVQb2ZvTS1vdDFwY3R2aGVoU2Zncms5QW5TNkNqR0M2b1d4Z1dRczZYVEZXWERGbjR6dlhFOVdxc25wc3Y3VGx1aEdvdDgyZE43a0JLTHNnWENHN2h2VGI2VkVlRHdmNnhXbGxVbG5aWWJISmJPa0Z5T3A0N1MxamdGQzNVNmlPbkdfY3hrVWl5MG9MNFZjZw%3D%3D"
-
+        # আপনার প্রোভাইড করা টোকেনগুলো এখানে থাকল
+        po_token = "MnrV5tDLFpi719XYBzk-0wdKFrJrQ4SDXEA8yPiK4d8oW2-0Qj14JLva12dPHnWKPgO5gbxkL0lDxgYpYBhZEv76ZnMrToZd8OFUHcGNhpFQWWxhfHMOHGRFaNwpuO92ScQAlzMFRzNF0i5-k8jFAvNU6mMlXUwtRaVMVA=="
+        visitor_data = "CgtyLXRGcU90bmpMdyifhdnKBjIKCgJCRBIEGgAgDg=="
         ydl_opts.update({
             'params': {
                 'po_token': [f"web+{po_token}"],
                 'visitor_data': visitor_data
             }
         })
-        logger.info(f"PO Token & Visitor Data applied for task {task_id}")
 
         # ------------------ Cookies System ------------------
         base_path = Path(__file__).parent.absolute()
         cookie_path = base_path / 'cookies.txt'
-        
         if cookie_path.exists():
             ydl_opts['cookiefile'] = str(cookie_path)
-            logger.info("Cookies loaded from cookies.txt")
-        else:
-            # সার্ভারে (Render) এটি কাজ করবে না, কিন্তু লোকাল পিসিতে ব্যাকআপ হিসেবে থাকবে
-            ydl_opts['cookiesfrombrowser'] = [
-                ('chrome',), ('edge',), ('brave',),
-                ('firefox',), ('opera',), ('vivaldi',)
-            ]
-            logger.info("cookies.txt missing -> Trying auto-load from browsers")
         
-        # ------------------ Output Folder ------------------
+        # ------------------ Unique Output Template (FIXED) ------------------
+        # এখানে {task_id} যোগ করা হয়েছে যাতে প্রতিটি ডাউনলোড ইউনিক ফাইল তৈরি করে
         output_dir = str(self.download_manager.download_dir)
         Path(output_dir).mkdir(exist_ok=True)
-        ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s_%(id)s_{format_id}.%(ext)s')
+        ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s_%(id)s_{format_id}_{task_id}.%(ext)s')
         
-        # ------------------ Format Handling ------------------
+        # ------------------ Format Handling (FIXED) ------------------
         if format_id == 'mp3':
             ydl_opts['format'] = 'bestaudio/best'
             ydl_opts['postprocessors'] = [{
@@ -585,16 +575,15 @@ class YouTubeDownloader:
             }]
         else:
             if format_id == 'best':
-                ydl_opts['format'] = (
-                    'bestvideo[vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]'
-                    '/best[vcodec!=av01][ext=mp4]/best'
-                )
+                # সর্বোচ্চ কোয়ালিটির জন্য
+                ydl_opts['format'] = 'bestvideo[vcodec!=av01][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
             else:
-                ydl_opts['format'] = (
-                    f"bestvideo[height<={format_id}][vcodec!=av01][ext=mp4]+"
-                    "bestaudio[ext=m4a]/best"
-                )
+                # নির্দিষ্ট রেজোলিউশন বা তার থেকে কম রেজোলিউশন খোঁজা
+                # এখানে শেষে '/best' সরিয়ে দেওয়া হয়েছে যাতে শর্ত না মিললে সব থেকে বড় ফাইল ডাউনলোড না হয়
+                # [ext=mp4] সরিয়ে দেওয়া হয়েছে কারণ ১৪৪পি অনেক সময় শুধু webm-এ থাকে, আমরা পরে কনভার্ট করে নেব
+                ydl_opts['format'] = f'bestvideo[height<={format_id}]+bestaudio/best[height<={format_id}]'
             
+            # আউটপুট ফরম্যাট সবসময় mp4 নিশ্চিত করা
             ydl_opts.update({
                 'merge_output_format': 'mp4',
                 'postprocessors': [{
@@ -863,7 +852,7 @@ def download_file(task_id):
     
     # Delayed Delete (৫ মিনিট পর ডিলিট হবে)
     if app.config.get('DELETE_AFTER_DOWNLOAD', True):
-        threading.Thread(target=lambda: (time.sleep(300), os.remove(filename) if os.path.exists(filename) else None), daemon=True).start()
+        threading.Thread(target=lambda: (time.sleep(60), os.remove(filename) if os.path.exists(filename) else None), daemon=True).start()
 
     import urllib.parse
     encoded_name = urllib.parse.quote(safe_filename)
